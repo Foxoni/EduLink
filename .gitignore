@@ -1,0 +1,6 @@
+# Fichiers d'environnement (Sécurité)
+.env
+
+# Dossiers virtuels Python (pour plus tard)
+venv/
+__pycache__/

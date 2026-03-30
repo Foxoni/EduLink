@@ -1,0 +1,22 @@
+
+services:
+  # --- NOTRE BASE DE DONNÉES MYSQL ---
+  db:
+    image: mysql:8.0
+    container_name: academie_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      # L'astuce magique : on dit à Docker de lire ton fichier init.sql au démarrage !
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      # On sauvegarde les données pour ne pas les perdre si on coupe Docker
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
