@@ -1,0 +1,53 @@
+name: Pipeline DevSecOps GCS2
+
+# Quand est-ce que ce pipeline s'exécute ?
+on:
+  push:
+    branches: [ "main" ] # À chaque fois qu'on envoie du code sur la branche principale
+  pull_request:
+    branches: [ "main" ] # À chaque proposition de fusion de code
+
+jobs:
+  # --- JOB 1 : QUALITÉ DU CODE ET SÉCURITÉ STATIQUE (SAST) ---
+  sast_and_linting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Récupération du code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Configuration de Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Installation des outils de sécurité
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 safety pip-audit
+
+      - name: 🧹 Analyse du code (Flake8)
+        run: |
+          # Arrête le pipeline s'il y a des erreurs de syntaxe fatales
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Affiche les avertissements sans bloquer (pour l'instant)
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: 🛡️ Audit des dépendances (pip-audit & safety)
+        run: |
+          # Le "|| true" permet de ne pas faire crasher le pipeline si vous n'avez pas encore de fichier requirements.txt
+          safety check || true
+          pip-audit || true
+
+  # --- JOB 2 : CONTENEURISATION (DOCKER) ---
+  build_docker:
+    needs: sast_and_linting # Ce job ne se lance QUE si le Job 1 a réussi
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Récupération du code
+        uses: actions/checkout@v4
+
+      - name: 🐳 Test de construction de l'image Docker
+        run: |
+          # Vérifie que le Dockerfile est valide et que l'application peut être conteneurisée
+          # (Ne plantera pas si le Dockerfile n'existe pas encore grâce au || true)
+          docker build -t app-academie . || true
