@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Mon Emploi du Temps</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; text-align: center; padding: 20px; }
+        nav { margin-bottom: 20px; }
+        nav a { margin: 0 15px; text-decoration: none; color: #0056b3; font-weight: bold; }
+        table { margin: 0 auto; background: white; border-collapse: collapse; width: 80%; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        th, td { padding: 15px; border: 1px solid #ddd; }
+        th { background-color: #28a745; color: white; } /* Vert pour différencier des notes */
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/mes-notes">📖 Mes Notes</a>
+        <a href="/mon-planning">📅 Mon Emploi du temps</a>
+        <a href="/logout" style="color: red;">🚪 Se déconnecter</a>
+    </nav>
+
+    <h1>Emploi du temps de {{ prenom }}</h1>
+    
+    <table>
+        <tr>
+            <th>Jour</th>
+            <th>Horaire</th>
+            <th>Matière</th>
+            <th>Salle</th>
+        </tr>
+        {% for cours in planning %}
+        <tr>
+            <td><strong>{{ cours[0] }}</strong></td>
+            <td>{{ cours[1] }} - {{ cours[2] }}</td>
+            <td>{{ cours[3] }}</td>
+            <td>{{ cours[4] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
