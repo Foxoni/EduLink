@@ -158,6 +158,21 @@
     .hero-badge strong { display: block; font-size: 15px; font-weight: 600; }
     .hero-badge span { font-size: 12px; opacity: 0.70; }
 
+    /* ── Breadcrumb ── */
+    .breadcrumb {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 4px;
+        animation: fadeUp 0.4s ease both;
+    }
+    .breadcrumb a { color: var(--blue); text-decoration: none; font-weight: 500; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb i { font-size: 10px; }
+
     /* ── Section title ── */
     .section-title {
         font-family: 'Fraunces', serif;
@@ -501,7 +516,7 @@
 <div class="topbar">
     <div class="logo">Dash<span>.</span>Prof</div>
     <nav>
-        <a href="#">Accueil</a>
+        <a href="/">Accueil</a>
         <a href="#">Cours</a>
         <a href="#">Étudiants</a>
         <a href="#">Statistiques</a>
@@ -512,6 +527,13 @@
 
 <!-- ── Contenu ── -->
 <div class="main-content">
+
+    <!-- Breadcrumb -->
+    <div class="breadcrumb">
+        <a href="/"><i class="fas fa-home"></i> Accueil</a>
+        <i class="fas fa-chevron-right"></i>
+        <span>Visualiser l'emploi du temps</span>
+    </div>
 
     <!-- Hero -->
     <div class="hero">

@@ -18,7 +18,6 @@ def accueil():
         {"title": "Consulter mes classes",             "url": "/classes"},
         {"title": "Créer une évaluation",              "url": "/evaluations"},
         {"title": "Attribuer / modifier les notes",    "url": "/notes"},
-        {"title": "Ajouter des commentaires",          "url": "/commentaires"},
         {"title": "Mettre des élèves absents",         "url": "/absences"},
         {"title": "Consulter mon emploi du temps",     "url": "/edt"},
     ]
@@ -49,6 +48,10 @@ def edt():
     
     # Tu passes la date à ton template
     return render_template("prof/edt.html", aujourdhui=aujourdhui)
+
+@app.route('/notes')
+def evals ():
+    return render_template("prof/notes.html")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True, port=5000)
