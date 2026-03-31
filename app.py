@@ -1,57 +1,85 @@
-from flask import Flask, render_template
-from datetime import datetime
-from zoneinfo import ZoneInfo  # pour gérer le fuseau horaire
+"""
+Point d'entrée de l'application EduLink.
 
+Sécurité mise en place :
+- Flask-WTF : protection CSRF sur tous les formulaires POST
+- Sessions sécurisées : HttpOnly, SameSite=Lax, durée de vie limitée à 1h
+- Headers HTTP : X-Frame-Options, X-Content-Type-Options, CSP, Referrer-Policy
+- Logs : accès non autorisés tracés via le décorateur role_required
+- Requêtes paramétrées : dans chaque blueprint (aucune concaténation SQL)
+"""
+
+import logging
+import os
+from datetime import timedelta
+
+from dotenv import load_dotenv
+from flask import Flask, render_template
+from flask_wtf.csrf import CSRFProtect
+
+from db import close_db
+from blueprints.auth.routes import auth_bp
+from blueprints.admin.routes import admin_bp
+from blueprints.prof.routes import prof_bp
+from blueprints.eleve.routes import eleve_bp
+
+load_dotenv()
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
+)
+
+# ── Application ───────────────────────────────────────────────────────────────
 app = Flask(__name__)
 
-@app.route('/')
-def accueil():
-    # Données du professeur (plus tard ça viendra de MySQL)
-    prof = {
-        "prenom": "Lucie",
-        "nom": "Petit"
-    }
+app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY")
 
-    # Les cartes du dashboard
-    dashboard = [
-        {"title": "Créer un projet",                  "url": "/projets"},
-        {"title": "Consulter mes classes",             "url": "/classes"},
-        {"title": "Créer une évaluation",              "url": "/evaluations"},
-        {"title": "Attribuer / modifier les notes",    "url": "/notes"},
-        {"title": "Mettre des élèves absents",         "url": "/absences"},
-        {"title": "Consulter mon emploi du temps",     "url": "/edt"},
-    ]
+# ── Sessions sécurisées ───────────────────────────────────────────────────────
+app.config["SESSION_COOKIE_HTTPONLY"] = True   # inaccessible au JS
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"  # protection CSRF cross-site
+app.config["SESSION_COOKIE_SECURE"] = False     # passer à True en production (HTTPS)
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=1)
 
-    # Récupérer la date actuelle et formater en français
-    now = datetime.now()
-    jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
-    mois = ["janvier", "février", "mars", "avril", "mai", "juin",
-            "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
-    date_fr = f"{jours[now.weekday()]} {now.day} {mois[now.month-1]} {now.year}"
+# ── CSRF (Flask-WTF) ──────────────────────────────────────────────────────────
+csrf = CSRFProtect(app)
 
-    return render_template('prof/index.html', prof=prof, dashboard=dashboard, date_fr=date_fr)
+# ── Blueprints ────────────────────────────────────────────────────────────────
+app.register_blueprint(auth_bp)
+app.register_blueprint(admin_bp)
+app.register_blueprint(prof_bp)
+app.register_blueprint(eleve_bp)
 
-@app.route('/projets')
-def projets():
-    # Exemple de données projets (tu pourras récupérer depuis MySQL plus tard)
-    liste_projets = [
-        {"nom": "Projet A", "statut": "En cours"},
-        {"nom": "Projet B", "statut": "Terminé"},
-        {"nom": "Projet C", "statut": "À démarrer"},
-    ]
-    return render_template('prof/projets.html', projets=liste_projets)
+# ── Fermeture DB en fin de requête ────────────────────────────────────────────
+app.teardown_appcontext(close_db)
 
-@app.route('/edt')
-def edt():
-    # Date actuelle en Europe/Paris
-    aujourdhui = datetime.now(tz=ZoneInfo("Europe/Paris"))
-    
-    # Tu passes la date à ton template
-    return render_template("prof/edt.html", aujourdhui=aujourdhui)
 
-@app.route('/notes')
-def evals ():
-    return render_template("prof/notes.html")
+# ── Headers HTTP de sécurité ──────────────────────────────────────────────────
+@app.after_request
+def set_security_headers(response):
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "script-src 'self'"
+    )
+    return response
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True, port=5000)
+
+# ── Gestionnaire d'erreur 403 ────────────────────────────────────────────────
+@app.errorhandler(403)
+def forbidden(_e):
+    return render_template("403.html"), 403
+
+
+# ── Gestionnaire d'erreur 404 ────────────────────────────────────────────────
+@app.errorhandler(404)
+def not_found(_e):
+    return render_template("404.html"), 404
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=False)
