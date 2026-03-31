@@ -4,3 +4,6 @@
 # Dossiers virtuels Python (pour plus tard)
 venv/
 __pycache__/
+
+# Fichiers de test
+credentials.txt
