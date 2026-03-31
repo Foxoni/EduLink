@@ -1,5 +1,6 @@
 from flask import Flask, render_template
 from datetime import datetime
+from zoneinfo import ZoneInfo  # pour gérer le fuseau horaire
 
 app = Flask(__name__)
 
@@ -40,6 +41,14 @@ def projets():
         {"nom": "Projet C", "statut": "À démarrer"},
     ]
     return render_template('prof/projets.html', projets=liste_projets)
+
+@app.route('/edt')
+def edt():
+    # Date actuelle en Europe/Paris
+    aujourdhui = datetime.now(tz=ZoneInfo("Europe/Paris"))
+    
+    # Tu passes la date à ton template
+    return render_template("prof/edt.html", aujourdhui=aujourdhui)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True, port=5000)
