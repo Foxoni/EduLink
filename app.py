@@ -31,5 +31,15 @@ def accueil():
 
     return render_template('prof/index.html', prof=prof, dashboard=dashboard, date_fr=date_fr)
 
+@app.route('/projets')
+def projets():
+    # Exemple de données projets (tu pourras récupérer depuis MySQL plus tard)
+    liste_projets = [
+        {"nom": "Projet A", "statut": "En cours"},
+        {"nom": "Projet B", "statut": "Terminé"},
+        {"nom": "Projet C", "statut": "À démarrer"},
+    ]
+    return render_template('prof/projets.html', projets=liste_projets)
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True, port=5000)
