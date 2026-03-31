@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduLink — Connexion</title>
+</head>
+<body>
+    <h1>EduLink</h1>
+    <h2>Connexion</h2>
+
+    {% if error %}
+        <p style="color:red;">{{ error }}</p>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('auth.login') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <label for="compte">Identifiant</label>
+        <input type="text" id="compte" name="compte" required autofocus>
+
+        <label for="mdp">Mot de passe</label>
+        <input type="password" id="mdp" name="mdp" required>
+
+        <button type="submit">Se connecter</button>
+    </form>
+</body>
+</html>
