@@ -1,4 +1,5 @@
 from flask import Flask, render_template
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -21,7 +22,14 @@ def accueil():
         {"title": "Consulter mon emploi du temps",     "url": "/edt"},
     ]
 
-    return render_template('prof/index.html', prof=prof, dashboard=dashboard)
+    # Récupérer la date actuelle et formater en français
+    now = datetime.now()
+    jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+    mois = ["janvier", "février", "mars", "avril", "mai", "juin",
+            "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+    date_fr = f"{jours[now.weekday()]} {now.day} {mois[now.month-1]} {now.year}"
+
+    return render_template('prof/index.html', prof=prof, dashboard=dashboard, date_fr=date_fr)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True, port=5000)
