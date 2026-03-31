@@ -12,13 +12,13 @@ def accueil():
 
     # Les cartes du dashboard
     dashboard = [
-        {"title": "Créer un projet",                  "url": "/projets/creer"},
+        {"title": "Créer un projet",                  "url": "/projets"},
         {"title": "Consulter mes classes",             "url": "/classes"},
-        {"title": "Créer une évaluation",              "url": "/evaluations/creer"},
+        {"title": "Créer une évaluation",              "url": "/evaluations"},
         {"title": "Attribuer / modifier les notes",    "url": "/notes"},
         {"title": "Ajouter des commentaires",          "url": "/commentaires"},
         {"title": "Mettre des élèves absents",         "url": "/absences"},
-        {"title": "Consulter mon emploi du temps",     "url": "/emploi-du-temps"},
+        {"title": "Consulter mon emploi du temps",     "url": "/edt"},
     ]
 
     return render_template('prof/index.html', prof=prof, dashboard=dashboard)
