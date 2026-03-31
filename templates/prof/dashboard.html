@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>EduLink — Professeur</title>
+</head>
+<body>
+    <h1>Espace Professeur</h1>
+    <p>Bienvenue, {{ prenom }} {{ nom }}</p>
+
+    <nav>
+        <ul>
+            <li>Mes classes</li>
+            <li>Évaluations</li>
+            <li>Notes</li>
+            <li>Emplois du temps</li>
+        </ul>
+    </nav>
+
+    <form method="POST" action="{{ url_for('auth.logout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit">Déconnexion</button>
+    </form>
+</body>
+</html>
