@@ -1,0 +1,148 @@
+/* ================================================================
+   EduLink — Design System
+   Charte graphique commune à toutes les pages
+   ================================================================ */
+
+/* ── Variables ───────────────────────────────────────────────── */
+:root {
+    --blue-primary:  #2F6FED;
+    --blue-light:    #E8F0FE;
+    --blue-hover:    #2558c4;
+    --gray-dark:     #2B2B2B;
+    --gray-medium:   #6B7280;
+    --gray-light:    #F3F4F6;
+    --white:         #FFFFFF;
+    --accent:        #F9A826;
+    --error:         #DC2626;
+    --success:       #16A34A;
+    --radius:        8px;
+    --shadow:        0 4px 24px rgba(0, 0, 0, 0.08);
+    --shadow-hover:  0 8px 32px rgba(47, 111, 237, 0.18);
+    --transition:    0.2s ease;
+}
+
+/* ── Reset minimal ───────────────────────────────────────────── */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    color: var(--gray-dark);
+    background-color: var(--blue-light);
+    min-height: 100vh;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+}
+
+a {
+    color: var(--blue-primary);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* ── Carte (card) ────────────────────────────────────────────── */
+.card {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 2.5rem;
+}
+
+/* ── Bouton principal ────────────────────────────────────────── */
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+    background-color: var(--blue-primary);
+    color: var(--white);
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background-color var(--transition), box-shadow var(--transition), transform var(--transition);
+}
+
+.btn-primary:hover {
+    background-color: var(--blue-hover);
+    box-shadow: var(--shadow-hover);
+    transform: translateY(-1px);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+/* ── Champ de formulaire ─────────────────────────────────────── */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 1.25rem;
+}
+
+.form-group label {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--gray-dark);
+}
+
+.form-group input {
+    padding: 0.7rem 1rem;
+    border: 1.5px solid #D1D5DB;
+    border-radius: var(--radius);
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.95rem;
+    color: var(--gray-dark);
+    background: var(--white);
+    transition: border-color var(--transition), box-shadow var(--transition);
+    outline: none;
+}
+
+.form-group input:focus {
+    border-color: var(--blue-primary);
+    box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.15);
+}
+
+/* ── Alerte erreur ───────────────────────────────────────────── */
+.alert-error {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background-color: #FEF2F2;
+    border: 1px solid #FECACA;
+    border-left: 4px solid var(--error);
+    border-radius: var(--radius);
+    color: var(--error);
+    font-size: 0.9rem;
+    margin-bottom: 1.25rem;
+}
+
+/* ── Badge accent ────────────────────────────────────────────── */
+.badge-accent {
+    display: inline-block;
+    background-color: var(--accent);
+    color: var(--white);
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 99px;
+}
