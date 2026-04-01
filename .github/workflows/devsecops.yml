@@ -77,9 +77,10 @@ jobs:
           echo "MYSQL_DATABASE=EduLink" >> .env
           echo "MYSQL_USER=testuser" >> .env
           echo "MYSQL_PASSWORD=testpass" >> .env
-          
+          echo "FLASK_SECRET_KEY=ci_secret_key_for_testing_only" >> .env
+
           # On lance le tout en arrière-plan
-          docker-compose up -d
+          docker compose up -d
           
           # On attend 15 secondes que MySQL et Flask soient bien démarrés
           sleep 15
