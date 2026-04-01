@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>EduLink - Gestion Utilisateurs</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/icons/font/bootstrap-icons.css">
+    <style>
+        .sidebar { min-height: 100vh; background-color: #212529; padding-top: 20px; }
+        .sidebar .nav-link { color: rgba(255,255,255,0.7); margin: 5px 15px; border-radius: 8px; }
+        .sidebar .nav-link.active { background-color: #0d6efd; color: white; }
+        .sort-link { text-decoration: none; color: inherit; }
+        .sort-link:hover { color: #0d6efd; }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-md-2 d-md-block sidebar shadow">
+                <h5 class="text-center mb-4 text-white">EduLink Admin</h5>
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="/classes"><i class="bi bi-journal-bookmark me-2"></i> Classes</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/utilisateurs"><i class="bi bi-people me-2"></i> Utilisateurs</a></li>
+                </ul>
+            </nav>
+
+            <main class="col-md-10 px-md-4 py-5">
+                <h2 class="mb-4">Liste des Utilisateurs</h2>
+
+                <div class="table-responsive bg-white p-4 shadow-sm rounded">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th><a href="?sort=nom" class="sort-link">Nom <i class="bi bi-arrow-down-up small"></i></a></th>
+                                <th>Prénom</th>
+                                <th>Compte (Email)</th>
+                                <th><a href="?sort=nom_role" class="sort-link">Rôle <i class="bi bi-arrow-down-up small"></i></a></th>
+                                <th>Classe</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in users %}
+                            <tr>
+                                <td><strong>{{ u.nom.upper() }}</strong></td>
+                                <td>{{ u.prenom }}</td>
+                                <td>{{ u.compte }}</td>
+                                <td>
+                                    <span class="badge {% if u.nom_role == 'Professeur' %}bg-warning text-dark{% elif u.nom_role == 'Admin' %}bg-danger{% else %}bg-info{% endif %}">
+                                        {{ u.nom_role }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if u.nom_role == 'Eleve' %}
+                                    <form action="/update-user-class" method="POST" class="d-flex gap-2">
+                                        <input type="hidden" name="id_user" value="{{ u.id_user }}">
+                                        <select name="id_classe" class="form-select form-select-sm" onchange="this.form.submit()">
+                                            <option value="">Aucune</option>
+                                            {% for c in classes %}
+                                            <option value="{{ c.id_classe }}" {% if c.id_classe == u.id_classe %}selected{% endif %}>
+                                                {{ c.nom_classe }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </form>
+                                    {% else %}
+                                    <span class="text-muted small">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <form action="/delete-user/{{ u.id_user }}" method="POST" onsubmit="return confirm('Supprimer cet utilisateur ?');">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

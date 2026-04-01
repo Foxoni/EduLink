@@ -1,22 +1,47 @@
-
 services:
-  # --- NOTRE BASE DE DONNÉES MYSQL ---
   db:
     image: mysql:8.0
-    container_name: academie_mysql
+    container_name: gcs_mysql_db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: EduLink
     ports:
       - "3306:3306"
     volumes:
-      # L'astuce magique : on dit à Docker de lire ton fichier init.sql au démarrage !
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-      # On sauvegarde les données pour ne pas les perdre si on coupe Docker
-      - db_data:/var/lib/mysql
+      # L'initialisation automatique (très pratique)
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      # La sauvegarde réelle
+      - ./mysql_data:/var/lib/mysql
 
-volumes:
-  db_data:
+  # --- PHPMYADMIN (Interface visuelle) ---
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: gcs_pma
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+    depends_on:
+      - db
+
+  # --- APPLICATION FLASK (ADMIN) ---
+  app:
+    build: .
+    container_name: gcs_flask_app
+    restart: always
+    ports:
+      - "5001:5000"
+    volumes:
+      # Synchronise ton code local avec le conteneur (très utile pour le dev)
+      - .:/app
+    environment:
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: root_password
+      DB_NAME: EduLink
+      FLASK_ENV: development
+      FLASK_DEBUG: 1
+    depends_on:
+      - db
