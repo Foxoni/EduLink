@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 import mysql.connector
+import bcrypt
 
 app = Flask(__name__)
 app.secret_key = "devsecops_key"
@@ -52,30 +53,80 @@ def add_class():
 
 @app.route('/utilisateurs')
 def user_page():
-    sort_by = request.args.get('sort', 'nom')
-    allowed_sorts = ['nom', 'prenom', 'compte', 'nom_role']
-    if sort_by not in allowed_sorts:
-        sort_by = 'nom'
+    conn = None
+    users = []
+    roles = []
+    classes = []
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Récupération des utilisateurs avec le nom de leur rôle et classe
+        cursor.execute("""
+            SELECT u.*, r.nom_role, c.nom_classe 
+            FROM Utilisateurs u
+            JOIN Roles r ON u.id_role = r.id_role
+            LEFT JOIN Classes c ON u.id_classe = c.id_classe
+        """)
+        users = cursor.fetchall()
+        
+        # Récupération des Rôles et Classes pour le formulaire de création
+        cursor.execute("SELECT * FROM Roles")
+        roles = cursor.fetchall()
+        
+        cursor.execute("SELECT * FROM Classes")
+        classes = cursor.fetchall()
+        
+    except Exception as e:
+        flash(f"Erreur SQL : {e}", "danger")
+    finally:
+        if conn:
+            conn.close()
+            
+    return render_template('admin/utilisateur.html', users=users, roles=roles, classes=classes)
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    # Requête avec jointures selon le schéma de init.sql
-    query = f"""
-        SELECT u.id_user, u.nom, u.prenom, u.compte, r.nom_role, c.nom_classe, u.id_classe
-        FROM Utilisateurs u
-        JOIN Roles r ON u.id_role = r.id_role
-        LEFT JOIN Classes c ON u.id_classe = c.id_classe
-        ORDER BY {sort_by}
-    """
-    cursor.execute(query)
-    users = cursor.fetchall()
-    
-    cursor.execute("SELECT id_classe, nom_classe FROM Classes")
-    classes = cursor.fetchall()
-    conn.close()
-    # Chemin mis à jour pour pointer vers templates/admin/utilisateur.html
-    return render_template('admin/utilisateur.html', users=users, classes=classes)
+@app.route('/add-user', methods=['POST'])
+def add_user():
+    nom = request.form.get('nom')
+    prenom = request.form.get('prenom')
+    compte = request.form.get('compte')
+    mdp = request.form.get('mdp')
+    id_role = request.form.get('id_role')
+    matiere = request.form.get('matiere')
+    id_classe = request.form.get('id_classe')
+
+    # Nettoyage : Si le champ est vide, on envoie "None" (NULL) à MySQL
+    val_matiere = matiere if matiere and matiere.strip() != "" else None
+    val_classe = id_classe if id_classe and id_classe.strip() != "" else None
+
+    conn = None
+    try:
+        # Hachage du mot de passe
+        hashed_mdp = bcrypt.hashpw(mdp.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Insertion dans la base de données
+        cursor.execute("""
+            INSERT INTO Utilisateurs (id_role, compte, mdp, nom, prenom, matiere, id_classe)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (id_role, compte, hashed_mdp, nom, prenom, val_matiere, val_classe))
+
+        conn.commit()
+        flash(f"L'utilisateur {prenom} {nom} a été créé avec succès !", "success")
+        
+    except Exception as e:
+        # Si le compte existe déjà (car UNIQUE dans la DB), on intercepte l'erreur
+        if "Duplicate entry" in str(e):
+            flash("Erreur : Ce compte (pseudo/email) existe déjà.", "danger")
+        else:
+            flash(f"Erreur lors de la création : {e}", "danger")
+    finally:
+        if conn:
+            conn.close()
+
+    return redirect(url_for('user_page'))
 
 # ... garder les autres routes (delete_user, update_user_class) telles quelles ...
 @app.route('/update-user-class', methods=['POST'])
@@ -111,6 +162,97 @@ def delete_user(id_user):
     # Même chose ici, on redirige vers le nom exact de ta fonction
     return redirect(url_for('user_page'))
 
+@app.route('/emploi-du-temps')
+def emploi_page():
+    class_id = request.args.get('classe_id')
+    conn = None
+    classes = []
+    emploi = []
+    profs = []
+    current_classe = None
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("SELECT id_classe, nom_classe FROM Classes")
+        classes = cursor.fetchall()
+
+        if class_id:
+            cursor.execute(
+                "SELECT id_classe, nom_classe FROM Classes WHERE id_classe = %s",
+                (class_id,)
+            )
+            current_classe = cursor.fetchone()
+
+            cursor.execute("""
+                SELECT e.id_cours, e.date, e.heure_debut, e.heure_fin, e.salle,
+                       u.nom, u.prenom, u.matiere
+                FROM Emploi_du_temps e
+                JOIN Utilisateurs u ON e.id_prof = u.id_user
+                WHERE e.id_classe = %s
+                ORDER BY e.date, e.heure_debut
+            """, (class_id,))
+            emploi = cursor.fetchall()
+
+            cursor.execute(
+                "SELECT id_user, nom, prenom, matiere FROM Utilisateurs WHERE id_role = 2"
+            )
+            profs = cursor.fetchall()
+
+    except Exception as e:
+        flash(f"Erreur SQL : {e}", "danger")
+    finally:
+        if conn:
+            conn.close()
+
+    return render_template('admin/emploi.html', classes=classes, emploi=emploi,
+                           current_classe=current_classe, profs=profs)
+
+
+@app.route('/add-cours', methods=['POST'])
+def add_cours():
+    id_classe = request.form.get('id_classe')
+    id_prof = request.form.get('id_prof')
+    date_cours = request.form.get('date')
+    salle = request.form.get('salle')
+    heure_debut = request.form.get('heure_debut')
+    heure_fin = request.form.get('heure_fin')
+    
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # --- VÉRIFICATION DES CONFLITS SUR LA MÊME DATE ---
+        # Un conflit existe si le nouveau cours commence avant la fin d'un autre 
+        # ET finit après le début de cet autre cours.
+        cursor.execute("""
+            SELECT id_cours FROM Emploi_du_temps 
+            WHERE id_classe = %s AND date = %s 
+            AND (heure_debut < %s AND heure_fin > %s)
+        """, (id_classe, date_cours, heure_fin, heure_debut))
+        
+        conflit = cursor.fetchone()
+        
+        if conflit:
+            flash("Action bloquée : La classe a déjà un cours sur ce créneau à cette date !", "danger")
+        else:
+            # On insère avec tes colonnes exactes
+            cursor.execute("""
+                INSERT INTO Emploi_du_temps (id_classe, id_prof, salle, date, heure_debut, heure_fin)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (id_classe, id_prof, salle, date_cours, heure_debut, heure_fin))
+            conn.commit()
+            flash("Cours ajouté avec succès au planning.", "success")
+            
+    except Exception as e:
+        flash(f"Erreur lors de l'ajout : {e}", "danger")
+    finally:
+        if conn:
+            conn.close()
+            
+    return redirect(url_for('emploi_page', classe_id=id_classe))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

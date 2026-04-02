@@ -1,113 +1,72 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Administration - Gestion des Classes</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/icons/font/bootstrap-icons.css">
-    <style>
-        body { overflow-x: hidden; }
-        /* Style de la barre latérale */
-        .sidebar {
-            min-height: 100vh;
-            background-color: #212529;
-            color: white;
-            padding-top: 20px;
-        }
-        .sidebar .nav-link {
-            color: rgba(255,255,255,0.7);
-            margin: 5px 15px;
-            border-radius: 8px;
-        }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active {
-            color: white;
-            background-color: #0d6efd;
-        }
-        /* Style des cartes de classes */
-        .class-card { 
-            transition: transform 0.2s, box-shadow 0.2s; 
-            cursor: pointer; 
-            text-decoration: none; 
-            color: inherit; 
-        }
-        .class-card:hover { 
-            transform: translateY(-5px); 
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
-        }
-    </style>
-</head>
-<body class="bg-light">
+{# ================================================================
+   classe.html — Gestion des Classes
+   Hérite de admin/layout.html (sidebar + head communs).
 
-    <div class="container-fluid">
-        <div class="row">
-            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse shadow">
-                <div class="position-sticky">
-                    <h5 class="text-center mb-4 text-white">GCS Admin</h5>
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link active" href="/classes">
-                                <i class="bi bi-journal-bookmark me-2"></i> Classes
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/utilisateurs">
-                                <i class="bi bi-people me-2"></i> Utilisateurs
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
+   Variables reçues depuis admin.py (route /classes) :
+     - classes : liste de dicts {id_classe, nom_classe}
 
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-5">
-                
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                  {% if messages %}
-                    {% for category, message in messages %}
-                      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                      </div>
-                    {% endfor %}
-                  {% endif %}
-                {% endwith %}
+   Routes utilisées :
+     - add_class  (POST /admin/add-class) : créer une classe
+     - emploi_page (GET /emploi-du-temps) : voir le planning d'une classe
+================================================================ #}
+{% extends 'admin/layout.html' %}
 
-                <h2 class="mb-4 text-primary">Gestion des Classes</h2>
+{% block title %}EduLink — Formations{% endblock %}
 
-                <div class="card border-0 shadow-sm mb-5">
-                    <div class="card-body p-4">
-                        <h5 class="card-title mb-3">Ajouter une nouvelle classe</h5>
-                        <form action="/admin/add-class" method="POST" class="row g-3">
-                            <div class="col-md-8">
-                                <input type="text" name="nom_classe" class="form-control" placeholder="Ex: Master DevSecOps" required>
-                            </div>
-                            <div class="col-md-4">
-                                <button type="submit" class="btn btn-primary w-100">Enregistrer</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+{% block content %}
 
-                <h4 class="mb-3">Liste des Classes</h4>
-                <div class="row">
-                    {% for c in classes %}
-                    <div class="col-md-4 col-lg-3 mb-4">
-                        <div class="card h-100 border-0 shadow-sm class-card">
-                            <div class="card-body d-flex align-items-center justify-content-center">
-                                <h5 class="card-title text-center m-0">{{ c.nom_classe }}</h5>
-                            </div>
-                        </div>
-                    </div>
-                    {% else %}
-                    <div class="col-12 text-center py-5">
-                        <p class="text-muted italic">Aucune classe n'a encore été créée.</p>
-                    </div>
-                    {% endfor %}
-                </div>
-            </main>
-        </div>
+    {# ── En-tête de page ─────────────────────────────────────── #}
+    <header class="page-header">
+        <h2>Gestion des Classes</h2>
+        <p>Créez de nouvelles sections ou consultez les plannings par formation.</p>
+    </header>
+
+    {# ── Formulaire de création d'une nouvelle classe ─────────── #}
+    {# Envoie un POST à add_class avec le champ "nom_classe" #}
+    <div class="card" style="margin-bottom: 2.5rem;">
+        <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="bi bi-plus-square" style="color: var(--gray-medium);"></i>
+            Nouvelle Formation
+        </h3>
+        <form action="{{ url_for('add_class') }}" method="POST"
+              style="display: flex; gap: 1rem; align-items: flex-end;">
+            <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                <label>Nom de la classe</label>
+                <input type="text" name="nom_classe"
+                       placeholder="Ex: BTS SIO 2, Master Cybersécurité…" required>
+            </div>
+            <button type="submit" class="btn-primary" style="width: auto; height: 46px;">
+                <i class="bi bi-plus-circle"></i> Ajouter
+            </button>
+        </form>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+    {# ── Liste des classes existantes ─────────────────────────── #}
+    <h3 style="font-family: 'Poppins'; margin-bottom: 1.5rem; color: var(--gray-dark);">
+        Formations Actives
+    </h3>
+
+    {# Grille responsive : chaque carte représente une classe.
+       Un clic redirige vers l'emploi du temps de cette classe
+       en passant son id en paramètre GET (classe_id). #}
+    <div class="grid-auto">
+        {% for c in classes %}
+        <a href="{{ url_for('emploi_page') }}?classe_id={{ c.id_classe }}" class="class-card">
+            <div class="class-icon">
+                <i class="bi bi-mortarboard-fill"></i>
+            </div>
+            <div class="class-name">{{ c.nom_classe }}</div>
+            <div class="class-link">
+                Voir le planning <i class="bi bi-arrow-right-short"></i>
+            </div>
+        </a>
+        {% else %}
+        {# Affiché si la liste "classes" est vide #}
+        <div class="empty-state" style="grid-column: 1 / -1;">
+            <i class="bi bi-folder2-open"></i>
+            <p>Aucune classe enregistrée pour le moment.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+{% endblock %}

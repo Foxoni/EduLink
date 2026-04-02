@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}EduLink — Admin{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+
+        <aside class="sidebar">
+            <div class="brand">
+                <i class="bi bi-hexagon-fill"></i> EduLink
+            </div>
+            <ul class="nav-menu">
+                <li>
+                    <a href="{{ url_for('admin_page') }}"
+                       class="nav-link {{ 'active' if request.endpoint == 'admin_page' }}">
+                        <i class="bi bi-grid-1x2"></i> Formations
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('user_page') }}"
+                       class="nav-link {{ 'active' if request.endpoint == 'user_page' }}">
+                        <i class="bi bi-people-fill"></i> Utilisateurs
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('emploi_page') }}"
+                       class="nav-link {{ 'active' if request.endpoint == 'emploi_page' }}">
+                        <i class="bi bi-calendar-week"></i> Planning
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="{{ 'alert-error' if category == 'danger' else 'alert-success' }}">
+                    <i class="bi {{ 'bi-exclamation-triangle-fill' if category == 'danger' else 'bi-check-circle-fill' }}"></i>
+                    {{ message }}
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+
+        </main>
+    </div>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
