@@ -13,6 +13,16 @@ def get_db_connection():
         database="EduLink" # Correspond au 'USE EduLink' de init.sql
     )
 
+@app.route('/')
+def home():
+    return render_template('admin/dashboard.html', nom=None, prenom=None)
+
+
+@app.route('/logout')
+def logout():
+    return redirect(url_for('home'))
+
+
 @app.route('/classes')
 def admin_page():
     classes = [] # On initialise une liste vide par sécurité
@@ -253,6 +263,41 @@ def add_cours():
             conn.close()
             
     return redirect(url_for('emploi_page', classe_id=id_classe))
+
+@app.route('/delete-class/<int:id_classe>', methods=['POST'])
+def delete_class(id_classe):
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM Classes WHERE id_classe = %s", (id_classe,))
+        conn.commit()
+        flash("Classe supprimée avec succès.", "success")
+    except Exception as e:
+        flash(f"Erreur lors de la suppression : {e}", "danger")
+    finally:
+        if conn:
+            conn.close()
+    return redirect(url_for('admin_page'))
+
+
+@app.route('/delete-cours/<int:id_cours>', methods=['POST'])
+def delete_cours(id_cours):
+    classe_id = request.form.get('classe_id')
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM Emploi_du_temps WHERE id_cours = %s", (id_cours,))
+        conn.commit()
+        flash("Cours supprimé avec succès.", "success")
+    except Exception as e:
+        flash(f"Erreur lors de la suppression : {e}", "danger")
+    finally:
+        if conn:
+            conn.close()
+    return redirect(url_for('emploi_page', classe_id=classe_id))
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

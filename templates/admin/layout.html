@@ -12,29 +12,40 @@
     <div class="app-container">
 
         <aside class="sidebar">
-            <div class="brand">
+            {# Cliquer sur EduLink ramène à la page d'accueil admin #}
+            <a href="{{ url_for('admin.dashboard') }}" class="brand" style="text-decoration: none;">
                 <i class="bi bi-hexagon-fill"></i> EduLink
-            </div>
+            </a>
+
             <ul class="nav-menu">
                 <li>
-                    <a href="{{ url_for('admin_page') }}"
-                       class="nav-link {{ 'active' if request.endpoint == 'admin_page' }}">
+                    <a href="{{ url_for('admin.classes_page') }}"
+                       class="nav-link {{ 'active' if request.endpoint == 'admin.classes_page' }}">
                         <i class="bi bi-grid-1x2"></i> Formations
                     </a>
                 </li>
                 <li>
-                    <a href="{{ url_for('user_page') }}"
-                       class="nav-link {{ 'active' if request.endpoint == 'user_page' }}">
+                    <a href="{{ url_for('admin.user_page') }}"
+                       class="nav-link {{ 'active' if request.endpoint == 'admin.user_page' }}">
                         <i class="bi bi-people-fill"></i> Utilisateurs
                     </a>
                 </li>
                 <li>
-                    <a href="{{ url_for('emploi_page') }}"
-                       class="nav-link {{ 'active' if request.endpoint == 'emploi_page' }}">
+                    <a href="{{ url_for('admin.emploi_page') }}"
+                       class="nav-link {{ 'active' if request.endpoint == 'admin.emploi_page' }}">
                         <i class="bi bi-calendar-week"></i> Planning
                     </a>
                 </li>
             </ul>
+
+            {# Bouton de déconnexion en bas de la sidebar #}
+            <form method="POST" action="{{ url_for('auth.logout') }}"
+                  style="margin-top: auto; padding-top: 1.5rem; border-top: 1px solid #E5E7EB;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn-logout" style="width: 100%;">
+                    <i class="bi bi-box-arrow-right"></i> Déconnexion
+                </button>
+            </form>
         </aside>
 
         <main class="main-content">

@@ -31,7 +31,7 @@
 
         {# Formulaire GET : soumet automatiquement dès qu'une classe est choisie.
            Recharge la page avec ?classe_id=X pour afficher le bon planning. #}
-        <form action="{{ url_for('emploi_page') }}" method="GET"
+        <form action="{{ url_for('admin.emploi_page') }}" method="GET"
               class="card" style="padding: 1rem 1.25rem; margin-bottom: 0; min-width: 280px;">
             <label style="font-size: 0.75rem; font-weight: 600; color: var(--gray-medium);
                           text-transform: uppercase; letter-spacing: 0.05em;">
@@ -64,7 +64,8 @@
             <i class="bi bi-calendar-plus" style="color: var(--gray-medium);"></i>
             Ajouter un cours — {{ current_classe.nom_classe }}
         </h3>
-        <form action="{{ url_for('add_cours') }}" method="POST">
+        <form action="{{ url_for('admin.add_cours') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             {# Champ caché : transmet l'id de la classe au backend #}
             <input type="hidden" name="id_classe" value="{{ current_classe.id_classe }}">
 
@@ -132,6 +133,7 @@
                         <th>Matière</th>
                         <th>Intervenant</th>
                         <th>Salle</th>
+                        <th style="text-align: right;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -159,11 +161,25 @@
                             {# room-badge : style monospace pour les numéros de salle #}
                             <span class="room-badge">{{ cours.salle }}</span>
                         </td>
+                        <td style="text-align: right;">
+                            {# classe_id passé en champ caché pour rediriger vers
+                               la bonne classe après suppression #}
+                            <form action="{{ url_for('admin.delete_cours', id_cours=cours.id_cours) }}"
+                                  method="POST"
+                                  onsubmit="return confirm('Supprimer ce cours ?');"
+                                  style="margin: 0;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="classe_id" value="{{ current_classe.id_classe }}">
+                                <button type="submit" class="btn-danger" title="Supprimer ce cours">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </form>
+                        </td>
                     </tr>
                     {% else %}
                     {# Affiché si "emploi" est vide pour cette classe #}
                     <tr>
-                        <td colspan="5" style="text-align: center; padding: 4rem; color: var(--gray-medium);">
+                        <td colspan="6" style="text-align: center; padding: 4rem; color: var(--gray-medium);">
                             <i class="bi bi-calendar-x"
                                style="font-size: 2.5rem; display: block; margin-bottom: 1rem; opacity: 0.4;"></i>
                             Aucun cours programmé pour cette formation.

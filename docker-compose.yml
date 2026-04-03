@@ -37,10 +37,12 @@ services:
       # Synchronise ton code local avec le conteneur (très utile pour le dev)
       - .:/app
     environment:
-      DB_HOST: db
-      DB_USER: root
-      DB_PASSWORD: root_password
-      DB_NAME: EduLink
+      MYSQL_HOST: db
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: EduLink
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root_password
+      FLASK_SECRET_KEY: edulink-dev-secret-key-change-en-prod
       FLASK_ENV: development
       FLASK_DEBUG: 1
     depends_on:

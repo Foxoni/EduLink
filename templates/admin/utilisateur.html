@@ -31,7 +31,8 @@
             Ajouter un utilisateur
         </h3>
 
-        <form action="{{ url_for('add_user') }}" method="POST">
+        <form action="{{ url_for('admin.add_user') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             {# Nom et Prénom côte à côte #}
             <div class="form-row">
@@ -179,8 +180,9 @@
                                 </span>
                             {% elif user.nom_role == 'Eleve' %}
                                 {# Le formulaire se soumet automatiquement dès qu'une classe est sélectionnée #}
-                                <form action="{{ url_for('update_user_class') }}" method="POST"
+                                <form action="{{ url_for('admin.update_user_class') }}" method="POST"
                                       style="margin: 0; min-width: 180px;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="id_user" value="{{ user.id_user }}">
                                     <select name="id_classe" class="select-modern"
                                             style="padding: 0.4rem 2rem 0.4rem 0.8rem; font-size: 0.85rem;"
@@ -201,10 +203,11 @@
 
                         {# Bouton suppression avec confirmation JavaScript #}
                         <td style="text-align: right;">
-                            <form action="{{ url_for('delete_user', id_user=user.id_user) }}"
+                            <form action="{{ url_for('admin.delete_user', id_user=user.id_user) }}"
                                   method="POST"
                                   onsubmit="return confirm('Supprimer {{ user.prenom }} {{ user.nom }} ?');"
                                   style="margin: 0;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn-danger" title="Supprimer">
                                     <i class="bi bi-trash3"></i>
                                 </button>
