@@ -1,4 +1,3 @@
-
 services:
   # --- NOTRE BASE DE DONNÉES MYSQL ---
   db:
@@ -6,17 +5,30 @@ services:
     container_name: academie_mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-edulink}
+      MYSQL_USER: ${MYSQL_USER:-user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-userpassword}
     ports:
       - "3306:3306"
     volumes:
-      # L'astuce magique : on dit à Docker de lire ton fichier init.sql au démarrage !
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-      # On sauvegarde les données pour ne pas les perdre si on coupe Docker
       - db_data:/var/lib/mysql
+
+  # --- NOTRE SITE WEB (FLASK) ---
+  app:
+    build: .
+    container_name: academie_web
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      MYSQL_HOST: db
+      MYSQL_USER: ${MYSQL_USER:-user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-userpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-edulink}
+    depends_on:
+      - db
 
 volumes:
   db_data:
