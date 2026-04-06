@@ -189,36 +189,6 @@ a:hover {
 .form-row > * {
     flex: 1;
     min-width: 200px;
-    padding: 2.5rem;
-}
-
-/* ── Bouton principal ────────────────────────────────────────── */
-.btn-primary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    width: 100%;
-    padding: 0.75rem 1.5rem;
-    background-color: var(--blue-primary);
-    color: var(--white);
-    font-family: 'Poppins', sans-serif;
-    font-weight: 600;
-    font-size: 1rem;
-    border: none;
-    border-radius: var(--radius);
-    cursor: pointer;
-    transition: background-color var(--transition), box-shadow var(--transition), transform var(--transition);
-}
-
-.btn-primary:hover {
-    background-color: var(--blue-hover);
-    box-shadow: var(--shadow-hover);
-    transform: translateY(-1px);
-}
-
-.btn-primary:active {
-    transform: translateY(0);
 }
 
 /* ── Champ de formulaire ─────────────────────────────────────── */
@@ -392,7 +362,6 @@ a:hover {
 }
 
 /* ── Alertes ─────────────────────────────────────────────────── */
-/* ── Alerte erreur ───────────────────────────────────────────── */
 .alert-error {
     display: flex;
     align-items: center;
@@ -693,14 +662,3 @@ a:hover {
 
 .role-tag.prof  { background: #E0E7FF; color: #3730A3; }
 .role-tag.eleve { background: #D1FAE5; color: #065F46; }
-/* ── Badge accent ────────────────────────────────────────────── */
-.badge-accent {
-    display: inline-block;
-    background-color: var(--accent);
-    color: var(--white);
-    font-family: 'Poppins', sans-serif;
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.2rem 0.6rem;
-    border-radius: 99px;
-}
