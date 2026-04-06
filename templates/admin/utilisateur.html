@@ -2,15 +2,15 @@
    utilisateur.html — Gestion des Utilisateurs
    Hérite de admin/layout.html (sidebar + head communs).
 
-   Variables reçues depuis admin.py (route /utilisateurs) :
+   Variables reçues :
      - users   : liste de tous les utilisateurs avec leur rôle et classe
-     - roles   : liste des rôles disponibles (Admin, Professeur, Eleve)
-     - classes : liste des classes (pour le formulaire d'ajout et le tableau)
+     - roles   : liste des rôles disponibles
+     - classes : liste des classes
 
    Routes utilisées :
-     - add_user           (POST /add-user)            : créer un utilisateur
-     - update_user_class  (POST /update-user-class)   : changer la classe d'un élève
-     - delete_user        (POST /delete-user/<id>)    : supprimer un utilisateur
+     - admin.add_user           POST /admin/add-user
+     - admin.update_user_class  POST /admin/update-user-class
+     - admin.delete_user        POST /admin/delete-user/<id>
 ================================================================ #}
 {% extends 'admin/layout.html' %}
 
@@ -21,7 +21,7 @@
     {# ── En-tête de page ─────────────────────────────────────── #}
     <header class="page-header">
         <h2>Gestion des Utilisateurs</h2>
-        <p>Ajoutez de nouveaux membres, attribuez des rôles ou gérez les classes des élèves.</p>
+        <p>Ajoutez de nouveaux membres, filtrez et gérez les comptes existants.</p>
     </header>
 
     {# ── Formulaire d'ajout d'un utilisateur ──────────────────── #}
@@ -34,7 +34,6 @@
         <form action="{{ url_for('admin.add_user') }}" method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-            {# Nom et Prénom côte à côte #}
             <div class="form-row">
                 <div class="form-group">
                     <label>Nom</label>
@@ -46,7 +45,6 @@
                 </div>
             </div>
 
-            {# Identifiant et mot de passe côte à côte #}
             <div class="form-row">
                 <div class="form-group">
                     <label>Identifiant (Compte)</label>
@@ -54,18 +52,10 @@
                 </div>
                 <div class="form-group">
                     <label>Mot de passe</label>
-                    {# Le mot de passe sera haché par bcrypt dans admin.py avant stockage #}
                     <input type="password" name="mdp" placeholder="Définir un mot de passe" required>
                 </div>
             </div>
 
-            {# Sélection du rôle + champs conditionnels ────────────
-               La fonction JS toggleFields() écoute ce select.
-               Selon le rôle choisi :
-                 - Professeur -> affiche le champ "matière"
-                 - Elève      -> affiche le select "classe"
-                 - Admin      -> aucun champ supplémentaire
-            ─────────────────────────────────────────────────────── #}
             <div class="form-row" style="margin-bottom: 1.5rem;">
                 <div class="form-group">
                     <label>Rôle</label>
@@ -73,7 +63,6 @@
                             required onchange="toggleFields()">
                         <option value="">-- Sélectionner un rôle --</option>
                         {% for r in roles %}
-                            {# data-name est lu par toggleFields() pour identifier le rôle #}
                             <option value="{{ r.id_role }}" data-name="{{ r.nom_role }}">
                                 {{ r.nom_role }}
                             </option>
@@ -81,14 +70,12 @@
                     </select>
                 </div>
 
-                {# Champ matière : visible uniquement si rôle = Professeur #}
                 <div class="form-group" id="matiere_group" style="display: none;">
                     <label>Matière enseignée</label>
                     <input type="text" name="matiere" id="matiere_input"
                            placeholder="Ex: Mathématiques">
                 </div>
 
-                {# Champ classe : visible uniquement si rôle = Elève #}
                 <div class="form-group" id="classe_group" style="display: none;">
                     <label>Assigner à une classe</label>
                     <select name="id_classe" class="select-modern">
@@ -106,16 +93,91 @@
         </form>
     </div>
 
-    {# ── Tableau de tous les utilisateurs ────────────────────── #}
+    {# ── Tableau avec filtres ─────────────────────────────────── #}
     <div class="card">
-        <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
-            <i class="bi bi-card-list" style="color: var(--gray-medium);"></i>
-            Répertoire des membres
-        </h3>
+        <div style="display: flex; align-items: center; justify-content: space-between;
+                    margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <h3 style="display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+                <i class="bi bi-card-list" style="color: var(--gray-medium);"></i>
+                Répertoire des membres
+            </h3>
+            {# Compteur mis à jour par le JS ─────────────────── #}
+            <span id="user-count" class="badge-accent">
+                {{ users|length }} utilisateur(s)
+            </span>
+        </div>
 
-        {# table-overflow permet le scroll horizontal sur petits écrans #}
+        {# ── Barre de filtres ────────────────────────────────── #}
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem;
+                    padding: 1.25rem; background: var(--blue-light);
+                    border-radius: var(--radius);">
+
+            {# Recherche texte libre #}
+            <div style="flex: 2; min-width: 200px;">
+                <label style="font-size: 0.75rem; font-weight: 600; color: var(--gray-medium);
+                               text-transform: uppercase; letter-spacing: 0.05em;
+                               display: block; margin-bottom: 0.4rem;">
+                    <i class="bi bi-search"></i> Rechercher
+                </label>
+                <input type="text" id="filter-search"
+                       placeholder="Nom, prénom ou identifiant…"
+                       oninput="filterTable()"
+                       style="width: 100%; padding: 0.6rem 1rem; border: 1.5px solid #D1D5DB;
+                              border-radius: var(--radius); font-size: 0.9rem; outline: none;
+                              transition: border-color 0.2s;">
+            </div>
+
+            {# Filtre par rôle #}
+            <div style="flex: 1; min-width: 150px;">
+                <label style="font-size: 0.75rem; font-weight: 600; color: var(--gray-medium);
+                               text-transform: uppercase; letter-spacing: 0.05em;
+                               display: block; margin-bottom: 0.4rem;">
+                    <i class="bi bi-shield"></i> Rôle
+                </label>
+                <select id="filter-role" class="select-modern" onchange="filterTable()">
+                    <option value="">Tous les rôles</option>
+                    {% for r in roles %}
+                        <option value="{{ r.nom_role }}">{{ r.nom_role }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {# Filtre par classe #}
+            <div style="flex: 1; min-width: 150px;">
+                <label style="font-size: 0.75rem; font-weight: 600; color: var(--gray-medium);
+                               text-transform: uppercase; letter-spacing: 0.05em;
+                               display: block; margin-bottom: 0.4rem;">
+                    <i class="bi bi-mortarboard"></i> Classe
+                </label>
+                <select id="filter-classe" class="select-modern" onchange="filterTable()">
+                    <option value="">Toutes les classes</option>
+                    {% for c in classes %}
+                        <option value="{{ c.nom_classe }}">{{ c.nom_classe }}</option>
+                    {% endfor %}
+                    <option value="__aucune__">Sans classe</option>
+                </select>
+            </div>
+
+            {# Bouton reset #}
+            <div style="display: flex; align-items: flex-end;">
+                <button onclick="resetFilters()" class="btn-logout"
+                        title="Effacer les filtres">
+                    <i class="bi bi-x-circle"></i> Réinitialiser
+                </button>
+            </div>
+        </div>
+
+        {# ── Message "aucun résultat" ─────────────────────────── #}
+        <div id="empty-filter" style="display: none; text-align: center;
+             padding: 3rem; color: var(--gray-medium);">
+            <i class="bi bi-search" style="font-size: 2rem; opacity: 0.4;
+               display: block; margin-bottom: 0.75rem;"></i>
+            Aucun utilisateur ne correspond aux filtres.
+        </div>
+
+        {# ── Tableau ─────────────────────────────────────────── #}
         <div class="table-overflow">
-            <table class="table">
+            <table class="table" id="users-table">
                 <thead>
                     <tr>
                         <th style="width: 50px;">ID</th>
@@ -127,13 +189,15 @@
                 </thead>
                 <tbody>
                     {% for user in users %}
-                    <tr>
-                        {# Identifiant technique en base #}
+                    <tr data-nom="{{ user.nom|lower }} {{ user.prenom|lower }}"
+                        data-compte="{{ user.compte|lower }}"
+                        data-role="{{ user.nom_role }}"
+                        data-classe="{{ user.nom_classe if user.nom_classe else '' }}">
+
                         <td style="color: var(--gray-medium); font-size: 0.85rem;">
                             #{{ user.id_user }}
                         </td>
 
-                        {# Avatar avec initiales + nom complet et identifiant #}
                         <td>
                             <div style="display: flex; align-items: center; gap: 1rem;">
                                 <div class="avatar">
@@ -150,7 +214,6 @@
                             </div>
                         </td>
 
-                        {# Badge coloré selon le rôle (r-admin / r-prof / r-eleve) #}
                         <td>
                             <span class="badge-role
                                 {% if user.nom_role == 'Admin' %}r-admin
@@ -167,11 +230,6 @@
                             </span>
                         </td>
 
-                        {# Colonne contextuelle selon le rôle :
-                           - Professeur : affiche sa matière
-                           - Elève      : select pour changer de classe (soumission auto)
-                           - Admin      : tiret
-                        #}
                         <td>
                             {% if user.nom_role == 'Professeur' %}
                                 <span style="display: flex; align-items: center; gap: 0.4rem; font-weight: 500;">
@@ -179,7 +237,6 @@
                                     {{ user.matiere }}
                                 </span>
                             {% elif user.nom_role == 'Eleve' %}
-                                {# Le formulaire se soumet automatiquement dès qu'une classe est sélectionnée #}
                                 <form action="{{ url_for('admin.update_user_class') }}" method="POST"
                                       style="margin: 0; min-width: 180px;">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -201,7 +258,6 @@
                             {% endif %}
                         </td>
 
-                        {# Bouton suppression avec confirmation JavaScript #}
                         <td style="text-align: right;">
                             <form action="{{ url_for('admin.delete_user', id_user=user.id_user) }}"
                                   method="POST"
@@ -215,8 +271,7 @@
                         </td>
                     </tr>
                     {% else %}
-                    {# Affiché si la liste "users" est vide #}
-                    <tr>
+                    <tr id="empty-table">
                         <td colspan="5" style="text-align: center; padding: 4rem; color: var(--gray-medium);">
                             <i class="bi bi-people" style="font-size: 2.5rem; display: block; margin-bottom: 1rem; opacity: 0.4;"></i>
                             Aucun utilisateur enregistré.
@@ -230,25 +285,68 @@
 
 {% endblock %}
 
-{# ── JavaScript : affichage conditionnel des champs du formulaire ── #}
+
 {% block scripts %}
 <script>
+function filterTable() {
+    const search      = document.getElementById('filter-search').value.toLowerCase().trim();
+    const roleFilter  = document.getElementById('filter-role').value;
+    const classeFilter = document.getElementById('filter-classe').value;
+
+    const rows   = document.querySelectorAll('#users-table tbody tr[data-nom]');
+    const empty  = document.getElementById('empty-filter');
+    const counter = document.getElementById('user-count');
+
+    let visible = 0;
+
+    rows.forEach(row => {
+        const nom     = row.dataset.nom    || '';
+        const compte  = row.dataset.compte || '';
+        const role    = row.dataset.role   || '';
+        const classe  = row.dataset.classe || '';
+
+        const matchSearch = !search ||
+            nom.includes(search) || compte.includes(search);
+
+        const matchRole = !roleFilter || role === roleFilter;
+
+        const matchClasse = !classeFilter ||
+            (classeFilter === '__aucune__' ? classe === '' : classe === classeFilter);
+
+        const show = matchSearch && matchRole && matchClasse;
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+
+    // Compteur
+    counter.textContent = visible + ' utilisateur(s)';
+
+    // Message vide
+    empty.style.display = visible === 0 ? 'block' : 'none';
+    document.querySelector('#users-table .table-overflow') // n/a ici
+}
+
+function resetFilters() {
+    document.getElementById('filter-search').value = '';
+    document.getElementById('filter-role').value   = '';
+    document.getElementById('filter-classe').value = '';
+    filterTable();
+}
+
 function toggleFields() {
-    const select = document.getElementById('role_select');
-    const roleName = select.options[select.selectedIndex].getAttribute('data-name');
+    const select      = document.getElementById('role_select');
+    const roleName    = select.options[select.selectedIndex].getAttribute('data-name');
     const matiereGroup = document.getElementById('matiere_group');
     const matiereInput = document.getElementById('matiere_input');
     const classeGroup  = document.getElementById('classe_group');
 
-    // Tout masquer par défaut
     matiereGroup.style.display = 'none';
-    matiereInput.required = false;
+    matiereInput.required      = false;
     classeGroup.style.display  = 'none';
 
-    // Afficher le bon champ selon le rôle sélectionné
     if (roleName === 'Professeur') {
         matiereGroup.style.display = 'block';
-        matiereInput.required = true;  // Rendre obligatoire si Professeur
+        matiereInput.required      = true;
     } else if (roleName === 'Eleve') {
         classeGroup.style.display = 'block';
     }
