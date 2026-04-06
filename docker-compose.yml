@@ -21,6 +21,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
 
   # ── Application Flask ──────────────────────────────────────
   app:
@@ -39,6 +44,11 @@ services:
     depends_on:
       db:
         condition: service_healthy  # attend que MySQL soit prêt
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: "1.0"
 
 volumes:
   db_data:

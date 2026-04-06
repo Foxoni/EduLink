@@ -3,12 +3,16 @@ Blueprint admin — espace réservé aux administrateurs (id_role = 1).
 Toute route de ce blueprint exige @role_required(1).
 """
 
+import logging
+
 import bcrypt
 from datetime import date, timedelta
 
 from flask import Blueprint, render_template, session, request, redirect, url_for, flash
 from decorators import role_required
 from db import get_db
+
+logger = logging.getLogger(__name__)
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin",
                      template_folder="../../templates/admin")
@@ -34,23 +38,27 @@ def classes_page():
         cursor.execute("SELECT id_classe, nom_classe FROM Classes")
         classes = cursor.fetchall()
     except Exception as e:
-        flash(f"Erreur SQL : {e}", "danger")
+        logger.error("classes_page: %s", e)
+        flash("Une erreur interne s'est produite.", "danger")
     return render_template("admin/classe.html", classes=classes)
 
 
 @admin_bp.route("/add-class", methods=["POST"])
 @role_required(1)
 def add_class():
-    nom = request.form.get("nom_classe")
-    if nom:
-        try:
-            db = get_db()
-            cursor = db.cursor()
-            cursor.execute("INSERT INTO Classes (nom_classe) VALUES (%s)", (nom,))
-            db.commit()
-            flash(f"Classe '{nom}' ajoutée avec succès !", "success")
-        except Exception as e:
-            flash(f"Erreur lors de l'ajout : {e}", "danger")
+    nom = request.form.get("nom_classe", "").strip()
+    if not nom or len(nom) > 100:
+        flash("Nom de classe invalide (1–100 caractères).", "danger")
+        return redirect(url_for("admin.classes_page"))
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("INSERT INTO Classes (nom_classe) VALUES (%s)", (nom,))
+        db.commit()
+        flash(f"Classe '{nom}' ajoutée avec succès !", "success")
+    except Exception as e:
+        logger.error("add_class: %s", e)
+        flash("Une erreur interne s'est produite.", "danger")
     return redirect(url_for("admin.classes_page"))
 
 
@@ -64,7 +72,8 @@ def delete_class(id_classe):
         db.commit()
         flash("Classe supprimée avec succès.", "success")
     except Exception as e:
-        flash(f"Erreur lors de la suppression : {e}", "danger")
+        logger.error("delete_class id=%s: %s", id_classe, e)
+        flash("Une erreur interne s'est produite.", "danger")
     return redirect(url_for("admin.classes_page"))
 
 
@@ -88,7 +97,8 @@ def user_page():
         cursor.execute("SELECT * FROM Classes")
         classes = cursor.fetchall()
     except Exception as e:
-        flash(f"Erreur SQL : {e}", "danger")
+        logger.error("user_page: %s", e)
+        flash("Une erreur interne s'est produite.", "danger")
     return render_template("admin/utilisateur.html",
                            users=users, roles=roles, classes=classes)
 
@@ -96,16 +106,33 @@ def user_page():
 @admin_bp.route("/add-user", methods=["POST"])
 @role_required(1)
 def add_user():
-    nom      = request.form.get("nom")
-    prenom   = request.form.get("prenom")
-    compte   = request.form.get("compte")
-    mdp      = request.form.get("mdp")
-    id_role  = request.form.get("id_role")
-    matiere  = request.form.get("matiere")
-    id_classe = request.form.get("id_classe")
+    nom       = (request.form.get("nom")      or "").strip()
+    prenom    = (request.form.get("prenom")   or "").strip()
+    compte    = (request.form.get("compte")   or "").strip()
+    mdp       = request.form.get("mdp", "")
+    id_role   = request.form.get("id_role",   "").strip()
+    matiere   = (request.form.get("matiere")  or "").strip()
+    id_classe = (request.form.get("id_classe") or "").strip()
 
-    val_matiere = matiere  if matiere  and matiere.strip()   else None
-    val_classe  = id_classe if id_classe and id_classe.strip() else None
+    # ── Validation ────────────────────────────────────────────────
+    if not nom or not prenom or not compte or not mdp or not id_role:
+        flash("Tous les champs obligatoires doivent être remplis.", "danger")
+        return redirect(url_for("admin.user_page"))
+    if len(nom) > 100 or len(prenom) > 100:
+        flash("Nom ou prénom trop long (100 caractères max).", "danger")
+        return redirect(url_for("admin.user_page"))
+    if len(compte) > 150:
+        flash("Identifiant trop long (150 caractères max).", "danger")
+        return redirect(url_for("admin.user_page"))
+    if len(mdp) < 8:
+        flash("Le mot de passe doit faire au moins 8 caractères.", "danger")
+        return redirect(url_for("admin.user_page"))
+    if id_role not in ("1", "2", "3"):
+        flash("Rôle invalide.", "danger")
+        return redirect(url_for("admin.user_page"))
+
+    val_matiere = matiere   or None
+    val_classe  = id_classe or None
 
     try:
         hashed = bcrypt.hashpw(mdp.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
@@ -119,9 +146,10 @@ def add_user():
         flash(f"L'utilisateur {prenom} {nom} a été créé avec succès !", "success")
     except Exception as e:
         if "Duplicate entry" in str(e):
-            flash("Erreur : Ce compte existe déjà.", "danger")
+            flash("Ce compte existe déjà.", "danger")
         else:
-            flash(f"Erreur lors de la création : {e}", "danger")
+            logger.error("add_user: %s", e)
+            flash("Une erreur interne s'est produite.", "danger")
     return redirect(url_for("admin.user_page"))
 
 
@@ -129,8 +157,8 @@ def add_user():
 @role_required(1)
 def update_user_class():
     id_user   = request.form.get("id_user")
-    id_classe = request.form.get("id_classe")
-    val_classe = id_classe if id_classe and id_classe.strip() else None
+    id_classe = (request.form.get("id_classe") or "").strip()
+    val_classe = id_classe or None
     try:
         db = get_db()
         cursor = db.cursor()
@@ -141,13 +169,17 @@ def update_user_class():
         db.commit()
         flash("Classe de l'utilisateur modifiée avec succès.", "success")
     except Exception as e:
-        flash(f"Erreur : {e}", "danger")
+        logger.error("update_user_class user=%s: %s", id_user, e)
+        flash("Une erreur interne s'est produite.", "danger")
     return redirect(url_for("admin.user_page"))
 
 
 @admin_bp.route("/delete-user/<int:id_user>", methods=["POST"])
 @role_required(1)
 def delete_user(id_user):
+    if id_user == session.get("user_id"):
+        flash("Vous ne pouvez pas supprimer votre propre compte.", "danger")
+        return redirect(url_for("admin.user_page"))
     try:
         db = get_db()
         cursor = db.cursor()
@@ -155,7 +187,8 @@ def delete_user(id_user):
         db.commit()
         flash("Utilisateur supprimé avec succès.", "success")
     except Exception as e:
-        flash(f"Erreur lors de la suppression : {e}", "danger")
+        logger.error("delete_user id=%s: %s", id_user, e)
+        flash("Une erreur interne s'est produite.", "danger")
     return redirect(url_for("admin.user_page"))
 
 
@@ -231,7 +264,8 @@ def emploi_page():
             profs = cursor.fetchall()
 
     except Exception as e:
-        flash(f"Erreur SQL : {e}", "danger")
+        logger.error("emploi_page: %s", e)
+        flash("Une erreur interne s'est produite.", "danger")
 
     return render_template(
         "admin/emploi.html",
@@ -248,32 +282,64 @@ def emploi_page():
 @admin_bp.route("/add-cours", methods=["POST"])
 @role_required(1)
 def add_cours():
-    id_classe   = request.form.get("id_classe")
-    id_prof     = request.form.get("id_prof")
-    date_cours  = request.form.get("date")
-    salle       = request.form.get("salle")
-    heure_debut = request.form.get("heure_debut")
-    heure_fin   = request.form.get("heure_fin")
+    id_classe   = request.form.get("id_classe",   "").strip()
+    id_prof     = request.form.get("id_prof",     "").strip()
+    date_cours  = request.form.get("date",        "").strip()
+    salle       = (request.form.get("salle") or "").strip()
+    heure_debut = request.form.get("heure_debut", "").strip()
+    heure_fin   = request.form.get("heure_fin",   "").strip()
+
+    if not all([id_classe, id_prof, date_cours, heure_debut, heure_fin]):
+        flash("Tous les champs obligatoires doivent être remplis.", "danger")
+        return redirect(url_for("admin.emploi_page", classe_id=id_classe))
+
+    if heure_debut >= heure_fin:
+        flash("L'heure de début doit être antérieure à l'heure de fin.", "danger")
+        return redirect(url_for("admin.emploi_page", classe_id=id_classe))
+
     try:
         db = get_db()
-        cursor = db.cursor()
+        cursor = db.cursor(dictionary=True)
+
+        # Validation : id_prof doit être un professeur (role=2)
+        cursor.execute(
+            "SELECT id_user FROM Utilisateurs WHERE id_user = %s AND id_role = 2",
+            (id_prof,)
+        )
+        if not cursor.fetchone():
+            flash("Intervenant invalide.", "danger")
+            return redirect(url_for("admin.emploi_page", classe_id=id_classe))
+
+        # Conflit de créneau pour la classe
         cursor.execute("""
             SELECT id_cours FROM Emploi_du_temps
             WHERE id_classe = %s AND date = %s
             AND (heure_debut < %s AND heure_fin > %s)
         """, (id_classe, date_cours, heure_fin, heure_debut))
-
         if cursor.fetchone():
             flash("Conflit : la classe a déjà un cours sur ce créneau !", "danger")
-        else:
+            return redirect(url_for("admin.emploi_page", classe_id=id_classe))
+
+        # Conflit de salle (F3)
+        if salle:
             cursor.execute("""
-                INSERT INTO Emploi_du_temps (id_classe, id_prof, salle, date, heure_debut, heure_fin)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            """, (id_classe, id_prof, salle, date_cours, heure_debut, heure_fin))
-            db.commit()
-            flash("Cours ajouté avec succès au planning.", "success")
+                SELECT id_cours FROM Emploi_du_temps
+                WHERE salle = %s AND date = %s
+                AND (heure_debut < %s AND heure_fin > %s)
+            """, (salle, date_cours, heure_fin, heure_debut))
+            if cursor.fetchone():
+                flash(f"Conflit : la salle {salle} est déjà occupée sur ce créneau !", "danger")
+                return redirect(url_for("admin.emploi_page", classe_id=id_classe))
+
+        cursor.execute("""
+            INSERT INTO Emploi_du_temps (id_classe, id_prof, salle, date, heure_debut, heure_fin)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (id_classe, id_prof, salle or None, date_cours, heure_debut, heure_fin))
+        db.commit()
+        flash("Cours ajouté avec succès au planning.", "success")
     except Exception as e:
-        flash(f"Erreur lors de l'ajout : {e}", "danger")
+        logger.error("add_cours: %s", e)
+        flash("Une erreur interne s'est produite.", "danger")
     return redirect(url_for("admin.emploi_page", classe_id=id_classe))
 
 
@@ -288,5 +354,6 @@ def delete_cours(id_cours):
         db.commit()
         flash("Cours supprimé avec succès.", "success")
     except Exception as e:
-        flash(f"Erreur lors de la suppression : {e}", "danger")
+        logger.error("delete_cours id=%s: %s", id_cours, e)
+        flash("Une erreur interne s'est produite.", "danger")
     return redirect(url_for("admin.emploi_page", classe_id=classe_id))

@@ -10,7 +10,7 @@ Usage :
 
 import os
 import sys
-import random
+import secrets
 import string
 import bcrypt
 import mysql.connector
@@ -26,10 +26,10 @@ GENERER_CREDS = "--creds" in sys.argv
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def generer_mdp(longueur: int = 14) -> str:
-    """Génère un mot de passe aléatoire fort : majuscule, minuscule, chiffre, symbole."""
+    """Génère un mot de passe aléatoire fort (CSPRNG) : majuscule, minuscule, chiffre, symbole."""
     alphabet = string.ascii_letters + string.digits + "!@#$%&*+-?"
     while True:
-        mdp = "".join(random.choices(alphabet, k=longueur))
+        mdp = "".join(secrets.choice(alphabet) for _ in range(longueur))
         if (any(c.isupper() for c in mdp)
                 and any(c.islower() for c in mdp)
                 and any(c.isdigit() for c in mdp)

@@ -6,7 +6,11 @@ Sécurité :
 - Vérification bcrypt du mot de passe haché
 - Token CSRF validé par Flask-WTF sur le POST
 - Session régénérée après connexion (prévention fixation de session)
+- Rate limiting : 10 tentatives/minute par IP (Flask-Limiter)
+- Logs : succès et échecs d'authentification tracés
 """
+
+import logging
 
 import bcrypt
 from flask import (
@@ -14,8 +18,11 @@ from flask import (
     session, redirect, url_for, flash,
 )
 from db import get_db
+from extensions import limiter
 
 auth_bp = Blueprint("auth", __name__, template_folder="../../templates")
+
+logger = logging.getLogger(__name__)
 
 # IDs de rôles (doivent correspondre à la table Roles)
 ROLE_ADMIN = 1
@@ -31,7 +38,9 @@ _REDIRECT_MAP = {
 
 @auth_bp.route("/", methods=["GET", "POST"])
 @auth_bp.route("/login", methods=["GET", "POST"])
+@limiter.limit("10 per minute")
 def login():
+
     if "user_id" in session:
         return _redirect_to_dashboard(session["role_id"])
 
@@ -46,9 +55,8 @@ def login():
         else:
             db = get_db()
             cur = db.cursor(dictionary=True)
-            # Requête paramétrée — aucune concaténation SQL possible
             cur.execute(
-                "SELECT id_user, id_role, mdp, nom, prenom "
+                "SELECT id_user, id_role, mdp, nom, prenom, matiere "
                 "FROM Utilisateurs WHERE compte = %s",
                 (compte,),
             )
@@ -56,16 +64,23 @@ def login():
             cur.close()
 
             if user and bcrypt.checkpw(mdp.encode(), user["mdp"].encode()):
-                # Régénération de session pour prévenir la fixation de session
+                logger.info(
+                    "Connexion réussie — user_id=%s compte=%s ip=%s",
+                    user["id_user"], compte, request.remote_addr,
+                )
                 session.clear()
                 session["user_id"] = user["id_user"]
                 session["role_id"] = user["id_role"]
                 session["nom"] = user["nom"]
                 session["prenom"] = user["prenom"]
-                session.permanent = True  # applique PERMANENT_SESSION_LIFETIME
+                session["matiere"] = user.get("matiere")
+                session.permanent = True
                 return _redirect_to_dashboard(user["id_role"])
             else:
-                # Message volontairement générique (pas de fuite d'info)
+                logger.warning(
+                    "Échec de connexion — compte=%s ip=%s",
+                    compte, request.remote_addr,
+                )
                 error = "Identifiant ou mot de passe incorrect."
 
     return render_template("login.html", error=error)
@@ -73,6 +88,10 @@ def login():
 
 @auth_bp.route("/logout", methods=["POST"])
 def logout():
+    logger.info(
+        "Déconnexion — user_id=%s ip=%s",
+        session.get("user_id"), request.remote_addr,
+    )
     session.clear()
     flash("Vous avez été déconnecté.")
     return redirect(url_for("auth.login"))

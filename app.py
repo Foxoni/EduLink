@@ -3,8 +3,10 @@ Point d'entrée de l'application EduLink.
 
 Sécurité mise en place :
 - Flask-WTF : protection CSRF sur tous les formulaires POST
-- Sessions sécurisées : HttpOnly, SameSite=Lax, durée de vie limitée à 1h
-- Headers HTTP : X-Frame-Options, X-Content-Type-Options, CSP, Referrer-Policy
+- Flask-Limiter : limitation du taux de requêtes sur le login (anti brute-force)
+- Sessions sécurisées : HttpOnly, SameSite=Strict, durée de vie limitée à 1h
+- Headers HTTP : X-Frame-Options, X-Content-Type-Options, CSP, Referrer-Policy,
+                 HSTS (prod), Permissions-Policy
 - Logs : accès non autorisés tracés via le décorateur role_required
 - Requêtes paramétrées : dans chaque blueprint (aucune concaténation SQL)
 """
@@ -18,6 +20,7 @@ from flask import Flask, render_template
 from flask_wtf.csrf import CSRFProtect
 
 from db import close_db
+from extensions import limiter
 from blueprints.auth.routes import auth_bp
 from blueprints.admin.routes import admin_bp
 from blueprints.prof.routes import prof_bp
@@ -37,13 +40,16 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY")
 
 # ── Sessions sécurisées ───────────────────────────────────────────────────────
-app.config["SESSION_COOKIE_HTTPONLY"] = True   # inaccessible au JS
-app.config["SESSION_COOKIE_SAMESITE"] = "Lax"  # protection CSRF cross-site
-app.config["SESSION_COOKIE_SECURE"] = False     # passer à True en production (HTTPS)
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Strict"
+app.config["SESSION_COOKIE_SECURE"] = os.getenv("FLASK_ENV") == "production"
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=1)
 
 # ── CSRF (Flask-WTF) ──────────────────────────────────────────────────────────
 csrf = CSRFProtect(app)
+
+# ── Rate limiting (Flask-Limiter) ─────────────────────────────────────────────
+limiter.init_app(app)
 
 # ── Blueprints ────────────────────────────────────────────────────────────────
 app.register_blueprint(auth_bp)
@@ -61,12 +67,17 @@ def set_security_headers(response):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
         "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; "
-        "script-src 'self' 'unsafe-inline'"
+        "script-src 'self'"
     )
+    if os.getenv("FLASK_ENV") == "production":
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
     return response
 
 
