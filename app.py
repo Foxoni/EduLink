@@ -72,6 +72,7 @@ def set_security_headers(response):
         "default-src 'self'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
         "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; "
+        "img-src 'self' data:; "
         "script-src 'self'"
     )
     if os.getenv("FLASK_ENV") == "production":

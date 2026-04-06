@@ -60,7 +60,7 @@
                 <div class="form-group">
                     <label>Rôle</label>
                     <select name="id_role" id="role_select" class="select-modern"
-                            required onchange="toggleFields()">
+                            required>
                         <option value="">-- Sélectionner un rôle --</option>
                         {% for r in roles %}
                             <option value="{{ r.id_role }}" data-name="{{ r.nom_role }}">
@@ -134,7 +134,7 @@
                                display: block; margin-bottom: 0.4rem;">
                     <i class="bi bi-shield"></i> Rôle
                 </label>
-                <select id="filter-role" class="select-modern" onchange="filterTable()">
+                <select id="filter-role" class="select-modern">
                     <option value="">Tous les rôles</option>
                     {% for r in roles %}
                         <option value="{{ r.nom_role }}">{{ r.nom_role }}</option>
@@ -149,7 +149,7 @@
                                display: block; margin-bottom: 0.4rem;">
                     <i class="bi bi-mortarboard"></i> Classe
                 </label>
-                <select id="filter-classe" class="select-modern" onchange="filterTable()">
+                <select id="filter-classe" class="select-modern">
                     <option value="">Toutes les classes</option>
                     {% for c in classes %}
                         <option value="{{ c.nom_classe }}">{{ c.nom_classe }}</option>
@@ -160,7 +160,7 @@
 
             {# Bouton reset #}
             <div style="display: flex; align-items: flex-end;">
-                <button onclick="resetFilters()" class="btn-logout"
+                <button id="btn-reset-filters" class="btn-logout"
                         title="Effacer les filtres">
                     <i class="bi bi-x-circle"></i> Réinitialiser
                 </button>
@@ -241,9 +241,8 @@
                                       style="margin: 0; min-width: 180px;">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="id_user" value="{{ user.id_user }}">
-                                    <select name="id_classe" class="select-modern"
-                                            style="padding: 0.4rem 2rem 0.4rem 0.8rem; font-size: 0.85rem;"
-                                            onchange="this.form.submit()">
+                                    <select name="id_classe" class="select-modern auto-submit-select"
+                                            style="padding: 0.4rem 2rem 0.4rem 0.8rem; font-size: 0.85rem;">
                                         <option value="">Aucune classe</option>
                                         {% for c in classes %}
                                             <option value="{{ c.id_classe }}"
@@ -287,69 +286,5 @@
 
 
 {% block scripts %}
-<script>
-function filterTable() {
-    const search      = document.getElementById('filter-search').value.toLowerCase().trim();
-    const roleFilter  = document.getElementById('filter-role').value;
-    const classeFilter = document.getElementById('filter-classe').value;
-
-    const rows   = document.querySelectorAll('#users-table tbody tr[data-nom]');
-    const empty  = document.getElementById('empty-filter');
-    const counter = document.getElementById('user-count');
-
-    let visible = 0;
-
-    rows.forEach(row => {
-        const nom     = row.dataset.nom    || '';
-        const compte  = row.dataset.compte || '';
-        const role    = row.dataset.role   || '';
-        const classe  = row.dataset.classe || '';
-
-        const matchSearch = !search ||
-            nom.includes(search) || compte.includes(search);
-
-        const matchRole = !roleFilter || role === roleFilter;
-
-        const matchClasse = !classeFilter ||
-            (classeFilter === '__aucune__' ? classe === '' : classe === classeFilter);
-
-        const show = matchSearch && matchRole && matchClasse;
-        row.style.display = show ? '' : 'none';
-        if (show) visible++;
-    });
-
-    // Compteur
-    counter.textContent = visible + ' utilisateur(s)';
-
-    // Message vide
-    empty.style.display = visible === 0 ? 'block' : 'none';
-    document.querySelector('#users-table .table-overflow') // n/a ici
-}
-
-function resetFilters() {
-    document.getElementById('filter-search').value = '';
-    document.getElementById('filter-role').value   = '';
-    document.getElementById('filter-classe').value = '';
-    filterTable();
-}
-
-function toggleFields() {
-    const select      = document.getElementById('role_select');
-    const roleName    = select.options[select.selectedIndex].getAttribute('data-name');
-    const matiereGroup = document.getElementById('matiere_group');
-    const matiereInput = document.getElementById('matiere_input');
-    const classeGroup  = document.getElementById('classe_group');
-
-    matiereGroup.style.display = 'none';
-    matiereInput.required      = false;
-    classeGroup.style.display  = 'none';
-
-    if (roleName === 'Professeur') {
-        matiereGroup.style.display = 'block';
-        matiereInput.required      = true;
-    } else if (roleName === 'Eleve') {
-        classeGroup.style.display = 'block';
-    }
-}
-</script>
+<script src="{{ url_for('static', filename='js/admin_utilisateurs.js') }}"></script>
 {% endblock %}

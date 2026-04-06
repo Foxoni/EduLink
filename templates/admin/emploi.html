@@ -28,8 +28,8 @@
                           text-transform:uppercase; letter-spacing:0.05em;">
                 Choisir une classe
             </label>
-            <select name="classe_id" class="select-modern"
-                    onchange="this.form.submit()" style="margin-top:0.5rem;">
+            <select name="classe_id" id="classe-select" class="select-modern"
+                    style="margin-top:0.5rem;">
                 <option value="">-- Sélectionner --</option>
                 {% for c in classes %}
                 <option value="{{ c.id_classe }}"
@@ -179,4 +179,8 @@
     </div>
     {% endif %}
 
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin_emploi.js') }}"></script>
 {% endblock %}
