@@ -398,23 +398,123 @@
 
 .form-group textarea { resize: vertical; min-height: 80px; }
 
-/* ── Planning (emploi du temps) ──────────────────────────────── */
-.planning-day {
-    margin-bottom: 1.5rem;
+/* ── Emploi du temps (grille hebdomadaire) ───────────────────── */
+.edt-section { padding: 1.5rem; }
+
+.edt-wrapper {
+    overflow-x: auto;
 }
 
-.planning-date {
+.edt-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+}
+
+/* En-têtes colonnes jours */
+.edt-th-time {
+    width: 80px;
+    min-width: 72px;
+    padding: 0.6rem 0.5rem;
+    background: var(--gray-light);
     font-family: 'Poppins', sans-serif;
-    font-size: 0.85rem;
+    font-size: 0.72rem;
     font-weight: 600;
-    color: var(--blue-primary);
+    color: var(--gray-medium);
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.4rem;
-    border-bottom: 2px solid var(--blue-light);
+    letter-spacing: 0.05em;
+    text-align: center;
+    border-right: 2px solid #E5E7EB;
 }
 
+.edt-th-day {
+    padding: 0.6rem 0.5rem;
+    background: var(--gray-light);
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--gray-dark);
+    text-align: center;
+    border-right: 1px solid #E5E7EB;
+}
+
+.edt-th-date {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: var(--gray-medium);
+    margin-top: 0.1rem;
+}
+
+.edt-today-header {
+    background: var(--blue-light);
+    color: var(--blue-primary);
+}
+.edt-today-header .edt-th-date { color: var(--blue-primary); }
+
+/* Colonne horaires */
+.edt-td-time {
+    padding: 0.5rem 0.4rem;
+    text-align: center;
+    background: var(--gray-light);
+    border-right: 2px solid #E5E7EB;
+    border-bottom: 1px solid #E5E7EB;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.edt-time-start {
+    display: block;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--gray-dark);
+}
+
+.edt-time-end {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--gray-medium);
+    margin-top: 0.1rem;
+}
+
+/* Cellules */
+.edt-td-cell {
+    padding: 0.35rem;
+    border-right: 1px solid #E5E7EB;
+    border-bottom: 1px solid #F3F4F6;
+    vertical-align: middle;
+    min-height: 52px;
+    height: 52px;
+}
+
+.edt-today-col {
+    background: #F5F8FF;
+}
+
+/* Pill de cours dans la cellule */
+.edt-cours-pill {
+    background: var(--blue-primary);
+    color: var(--white);
+    border-radius: 6px;
+    padding: 0.35rem 0.55rem;
+    height: 100%;
+}
+
+.edt-cours-classe {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.edt-cours-salle {
+    font-size: 0.72rem;
+    opacity: 0.85;
+    margin-top: 0.15rem;
+}
+
+/* Dashboard — cours-card (conservé pour le dashboard) */
 .cours-card {
     background: var(--white);
     border-radius: var(--radius);

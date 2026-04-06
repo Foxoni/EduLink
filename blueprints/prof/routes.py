@@ -10,6 +10,8 @@ Fonctionnalités :
   - Emploi du temps : consulter le planning du prof
 """
 
+from datetime import date, timedelta
+
 from flask import Blueprint, render_template, session, request, redirect, url_for, flash
 from decorators import role_required
 from db import get_db
@@ -339,6 +341,14 @@ def attribuer_note():
 
 # ── Emploi du temps ───────────────────────────────────────────────────────────
 
+def _fmt_time(t):
+    """Convertit un timedelta ou time MySQL en chaîne HH:MM."""
+    if hasattr(t, "total_seconds"):
+        s = int(t.total_seconds())
+        return "%02d:%02d" % (s // 3600, (s % 3600) // 60)
+    return t.strftime("%H:%M")
+
+
 @prof_bp.route("/emploi-du-temps")
 @role_required(2)
 def emploi_du_temps():
@@ -357,19 +367,45 @@ def emploi_du_temps():
         """,
         (prof_id,)
     )
-    cours = cur.fetchall()
+    cours_list = cur.fetchall()
     cur.close()
 
-    planning = {}
-    for c in cours:
+    # Normalise les champs TIME en chaînes HH:MM
+    for c in cours_list:
+        c["hd_str"] = _fmt_time(c["heure_debut"])
+        c["hf_str"] = _fmt_time(c["heure_fin"])
+
+    # Créneaux uniques triés (hd_str, hf_str)
+    creneaux_dict = {}
+    for c in cours_list:
+        creneaux_dict[c["hd_str"]] = c["hf_str"]
+    creneaux = sorted(creneaux_dict.items())
+
+    # Regroupement par semaine → jour (0=lun…4=ven) → créneau
+    semaines_raw = {}
+    for c in cours_list:
         d = c["date"]
-        if d not in planning:
-            planning[d] = []
-        planning[d].append(c)
+        lundi = d - timedelta(days=d.weekday())
+        semaines_raw.setdefault(lundi, {})
+        semaines_raw[lundi].setdefault(d.weekday(), {})
+        semaines_raw[lundi][d.weekday()][c["hd_str"]] = c
+
+    semaines = [
+        {
+            "lundi": lundi,
+            "jours_dates": [lundi + timedelta(days=i) for i in range(5)],
+            "par_jour": par_jour,
+        }
+        for lundi, par_jour in sorted(semaines_raw.items())
+    ]
 
     return render_template(
         "prof/emploi_du_temps.html",
         nom=session.get("nom"),
         prenom=session.get("prenom"),
-        planning=planning,
+        matiere=session.get("matiere"),
+        semaines=semaines,
+        creneaux=creneaux,
+        jours_noms=["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
+        today=date.today(),
     )

@@ -4,39 +4,60 @@
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">📅 Emploi du temps</h1>
-    <p class="page-subtitle">Vos cours planifiés par date</p>
+    <p class="page-subtitle">Planning hebdomadaire — {{ matiere if matiere else 'Vos cours' }}</p>
 </div>
 
-{% if planning %}
-    {% for date, cours_du_jour in planning.items() | sort %}
-    <div class="planning-day">
-        <div class="planning-date">
-            📆 {{ date.strftime('%A %d %B %Y') if date.__class__.__name__ == 'date' else date }}
+{% if semaines %}
+    {% for sem in semaines %}
+    <div class="section-card edt-section">
+        <div class="section-card-header">
+            <span class="section-card-title">
+                Semaine du {{ sem.lundi.strftime('%d/%m/%Y') }}
+                au {{ sem.jours_dates[4].strftime('%d/%m/%Y') }}
+            </span>
         </div>
-        {% for cours in cours_du_jour %}
-        <div class="cours-card">
-            <div class="cours-time">
-                {% if cours.heure_debut.__class__.__name__ == 'timedelta' %}
-                    {% set total = cours.heure_debut.seconds %}
-                    {{ '%02d:%02d' % (total // 3600, (total % 3600) // 60) }}
-                    →
-                    {% set total2 = cours.heure_fin.seconds %}
-                    {{ '%02d:%02d' % (total2 // 3600, (total2 % 3600) // 60) }}
-                {% else %}
-                    {{ cours.heure_debut.strftime('%H:%M') }} → {{ cours.heure_fin.strftime('%H:%M') }}
-                {% endif %}
-            </div>
-            <div class="cours-info">
-                <div class="cours-classe">{{ cours.nom_classe }}</div>
-                <div class="cours-salle">
-                    {% if cours.salle %}Salle {{ cours.salle }}{% else %}Salle non renseignée{% endif %}
-                </div>
-            </div>
-            <span class="badge badge-blue">Cours</span>
+
+        <div class="edt-wrapper">
+            <table class="edt-table">
+                <thead>
+                    <tr>
+                        <th class="edt-th-time">Horaire</th>
+                        {% for i in range(5) %}
+                        <th class="edt-th-day{% if sem.jours_dates[i] == today %} edt-today-header{% endif %}">
+                            {{ jours_noms[i] }}
+                            <span class="edt-th-date">{{ sem.jours_dates[i].strftime('%d/%m') }}</span>
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for hd, hf in creneaux %}
+                    <tr class="edt-row">
+                        <td class="edt-td-time">
+                            <span class="edt-time-start">{{ hd }}</span>
+                            <span class="edt-time-end">{{ hf }}</span>
+                        </td>
+                        {% for j in range(5) %}
+                        {% set cours = sem.par_jour.get(j, {}).get(hd) %}
+                        <td class="edt-td-cell{% if sem.jours_dates[j] == today %} edt-today-col{% endif %}">
+                            {% if cours %}
+                            <div class="edt-cours-pill">
+                                <div class="edt-cours-classe">{{ cours.nom_classe }}</div>
+                                {% if cours.salle %}
+                                <div class="edt-cours-salle">{{ cours.salle }}</div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-        {% endfor %}
     </div>
     {% endfor %}
+
 {% else %}
     <div class="section-card">
         <div class="empty-state">

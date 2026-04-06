@@ -4,6 +4,8 @@ Toute route de ce blueprint exige @role_required(1).
 """
 
 import bcrypt
+from datetime import date, timedelta
+
 from flask import Blueprint, render_template, session, request, redirect, url_for, flash
 from decorators import role_required
 from db import get_db
@@ -158,11 +160,19 @@ def delete_user(id_user):
 
 
 # ── Emploi du temps ────────────────────────────────────────────────────────────
+def _fmt_time(t):
+    """Convertit un timedelta ou time MySQL en chaîne HH:MM."""
+    if hasattr(t, "total_seconds"):
+        s = int(t.total_seconds())
+        return "%02d:%02d" % (s // 3600, (s % 3600) // 60)
+    return t.strftime("%H:%M")
+
+
 @admin_bp.route("/emploi-du-temps")
 @role_required(1)
 def emploi_page():
     class_id = request.args.get("classe_id")
-    classes, emploi, profs, current_classe = [], [], [], None
+    classes, semaines, creneaux, profs, current_classe = [], [], [], [], None
     try:
         db = get_db()
         cursor = db.cursor(dictionary=True)
@@ -184,7 +194,36 @@ def emploi_page():
                 WHERE e.id_classe = %s
                 ORDER BY e.date, e.heure_debut
             """, (class_id,))
-            emploi = cursor.fetchall()
+            cours_list = cursor.fetchall()
+
+            # Normalise les champs TIME en chaînes HH:MM
+            for c in cours_list:
+                c["hd_str"] = _fmt_time(c["heure_debut"])
+                c["hf_str"] = _fmt_time(c["heure_fin"])
+
+            # Créneaux uniques triés
+            creneaux_dict = {}
+            for c in cours_list:
+                creneaux_dict[c["hd_str"]] = c["hf_str"]
+            creneaux = sorted(creneaux_dict.items())
+
+            # Regroupement par semaine → jour (0=lun…4=ven) → créneau
+            semaines_raw = {}
+            for c in cours_list:
+                d = c["date"]
+                lundi = d - timedelta(days=d.weekday())
+                semaines_raw.setdefault(lundi, {})
+                semaines_raw[lundi].setdefault(d.weekday(), {})
+                semaines_raw[lundi][d.weekday()][c["hd_str"]] = c
+
+            semaines = [
+                {
+                    "lundi": lundi,
+                    "jours_dates": [lundi + timedelta(days=i) for i in range(5)],
+                    "par_jour": par_jour,
+                }
+                for lundi, par_jour in sorted(semaines_raw.items())
+            ]
 
             cursor.execute(
                 "SELECT id_user, nom, prenom, matiere FROM Utilisateurs WHERE id_role = 2"
@@ -194,9 +233,16 @@ def emploi_page():
     except Exception as e:
         flash(f"Erreur SQL : {e}", "danger")
 
-    return render_template("admin/emploi.html",
-                           classes=classes, emploi=emploi,
-                           current_classe=current_classe, profs=profs)
+    return render_template(
+        "admin/emploi.html",
+        classes=classes,
+        semaines=semaines,
+        creneaux=creneaux,
+        current_classe=current_classe,
+        profs=profs,
+        jours_noms=["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"],
+        today=date.today(),
+    )
 
 
 @admin_bp.route("/add-cours", methods=["POST"])
