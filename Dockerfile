@@ -1,17 +1,32 @@
-# On part d'une version légère de Python
-FROM python:3.9-slim
+# ── Image de base ─────────────────────────────────────────────
+FROM python:3.11-slim
 
-# On définit le dossier de travail dans le container
+# ── Dossier de travail ────────────────────────────────────────
 WORKDIR /app
 
-# On copie le fichier des dépendances
-COPY requirements.txt .
+# ── Dépendances système minimales ────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        default-libmysqlclient-dev \
+        gcc \
+    && rm -rf /var/lib/apt/lists/*
 
-# On installe les outils nécessaires (Flask, MySQL, etc.)
+# ── Dépendances Python ────────────────────────────────────────
+# Copie requirements en premier : si le code change mais pas
+# les dépendances, Docker réutilise le cache de cette couche.
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# On copie tout le reste de ton code (app.py, templates, etc.)
+# ── Code de l'application ─────────────────────────────────────
 COPY . .
 
-# On lance le site
-CMD ["python", "app.py"]
+# ── Utilisateur non-root (bonne pratique sécurité) ───────────
+RUN useradd -m appuser && chown -R appuser:appuser /app
+USER appuser
+
+# ── Port exposé ───────────────────────────────────────────────
+EXPOSE 5000
+
+# ── Lancement via Gunicorn (serveur de production) ───────────
+# -w 2 : 2 workers
+# -b 0.0.0.0:5000 : écoute sur toutes les interfaces
+CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:5000", "app:app"]
