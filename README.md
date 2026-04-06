@@ -9,7 +9,7 @@ Elle permet à un administrateur de gérer classes, utilisateurs et emplois du t
 |-----------|-------------|
 | Backend | Python 3.11 · Flask 3 · Flask-WTF (CSRF) |
 | Base de données | MySQL 8.0 |
-| Authentification | bcrypt · sessions sécurisées (HttpOnly, SameSite=Lax) |
+| Authentification | bcrypt · sessions sécurisées (HttpOnly, SameSite=Strict) · Flask-Limiter (brute-force) |
 | Conteneurisation | Docker · Docker Compose |
 | CI/CD | GitHub Actions (Gitleaks · Flake8 · pip-audit · Trivy · OWASP ZAP) |
 
@@ -109,6 +109,7 @@ python app.py
 ```
 EduLink/
 ├── app.py                  # Point d'entrée Flask
+├── extensions.py           # Instances partagées (Flask-Limiter)
 ├── db.py                   # Connexion MySQL (flask.g)
 ├── decorators.py           # @login_required, @role_required
 ├── init.sql                # Schéma de la base de données
@@ -126,7 +127,8 @@ EduLink/
 │   ├── prof/
 │   └── eleve/
 └── static/
-    └── css/
+    ├── css/                # style.css · prof.css · eleve.css
+    └── js/                 # admin_emploi.js · admin_utilisateurs.js
 ```
 
 ---
