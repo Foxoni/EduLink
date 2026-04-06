@@ -1,0 +1,49 @@
+{% extends "prof/base.html" %}
+{% block title %}Emploi du temps{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">📅 Emploi du temps</h1>
+    <p class="page-subtitle">Vos cours planifiés par date</p>
+</div>
+
+{% if planning %}
+    {% for date, cours_du_jour in planning.items() | sort %}
+    <div class="planning-day">
+        <div class="planning-date">
+            📆 {{ date.strftime('%A %d %B %Y') if date.__class__.__name__ == 'date' else date }}
+        </div>
+        {% for cours in cours_du_jour %}
+        <div class="cours-card">
+            <div class="cours-time">
+                {% if cours.heure_debut.__class__.__name__ == 'timedelta' %}
+                    {% set total = cours.heure_debut.seconds %}
+                    {{ '%02d:%02d' % (total // 3600, (total % 3600) // 60) }}
+                    →
+                    {% set total2 = cours.heure_fin.seconds %}
+                    {{ '%02d:%02d' % (total2 // 3600, (total2 % 3600) // 60) }}
+                {% else %}
+                    {{ cours.heure_debut.strftime('%H:%M') }} → {{ cours.heure_fin.strftime('%H:%M') }}
+                {% endif %}
+            </div>
+            <div class="cours-info">
+                <div class="cours-classe">{{ cours.nom_classe }}</div>
+                <div class="cours-salle">
+                    {% if cours.salle %}Salle {{ cours.salle }}{% else %}Salle non renseignée{% endif %}
+                </div>
+            </div>
+            <span class="badge badge-blue">Cours</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="section-card">
+        <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <p>Aucun cours n'est planifié pour le moment.<br>
+            L'administrateur est responsable de la création des emplois du temps.</p>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

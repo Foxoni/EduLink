@@ -8,5 +8,7 @@ __pycache__/
 # Fichiers de test
 credentials.txt
 
+# Configuration locale VSCode
+.vscode/
 mysql_data/
 .DS_Store
